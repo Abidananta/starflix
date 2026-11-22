@@ -13,6 +13,8 @@ android {
         versionName = "1.0"
         val key = System.getenv("TMDB_API_KEY") ?: (project.findProperty("TMDB_API_KEY") as String?) ?: ""
         buildConfigField("String", "TMDB_API_KEY", "\"$key\"")
+        val cat = System.getenv("CATALOG_URL") ?: (project.findProperty("CATALOG_URL") as String?) ?: ""
+        buildConfigField("String", "CATALOG_URL", "\"$cat\"")
     }
     buildFeatures { compose = true; buildConfig = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }

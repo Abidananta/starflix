@@ -4,6 +4,9 @@ import android.content.pm.ActivityInfo
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -43,7 +46,19 @@ import kotlinx.coroutines.delay
 @Composable
 fun DetailsScreen(t: Title, activity: MainActivity, onBack: () -> Unit, onOpen: (Title) -> Unit) {
     val ctx = LocalContext.current
-    val exo = remember { ExoPlayer.Builder(ctx).build().apply { setMediaItem(MediaItem.fromUri(DEMO_STREAM)); prepare(); playWhenReady = true } }
+    val exo = remember { ExoPlayer.Builder(ctx).build() }
+    val cs = Catalog.series[t.id]
+    var season by remember { mutableIntStateOf(cs?.seasons?.firstOrNull()?.season ?: 0) }
+    var ep by remember { mutableIntStateOf(cs?.seasons?.firstOrNull()?.episodes?.firstOrNull()?.ep ?: 0) }
+    val episode = cs?.seasons?.find { it.season == season }?.episodes?.find { it.ep == ep }
+    val url: String? = if (t.kind == "SERIES") episode?.stream else Catalog.movies[t.id]
+    fun nextEpisode() {
+        val seasons = cs?.seasons.orEmpty()
+        val eps = seasons.find { it.season == season }?.episodes.orEmpty()
+        val i = eps.indexOfFirst { it.ep == ep }
+        if (i in 0 until eps.lastIndex) ep = eps[i + 1].ep
+        else seasons.firstOrNull { it.season > season && !it.episodes.isNullOrEmpty() }?.let { season = it.season; ep = it.episodes!!.first().ep }
+    }
     var playing by remember { mutableStateOf(true) }
     var pos by remember { mutableLongStateOf(0L) }
     var dur by remember { mutableLongStateOf(0L) }
@@ -72,6 +87,9 @@ fun DetailsScreen(t: Title, activity: MainActivity, onBack: () -> Unit, onOpen: 
         }
     }
     LaunchedEffect(exo) { while (true) { if (!dragging) pos = exo.currentPosition; dur = exo.duration.coerceAtLeast(0L); delay(400) } }
+    LaunchedEffect(url) {
+        if (url != null) { exo.setMediaItem(MediaItem.fromUri(url)); exo.prepare(); exo.playWhenReady = true } else exo.stop()
+    }
     LaunchedEffect(quality) {
         exo.trackSelectionParameters = exo.trackSelectionParameters.buildUpon()
             .setMaxVideoSize(Int.MAX_VALUE, if (quality == 0) Int.MAX_VALUE else quality).build()
@@ -88,6 +106,8 @@ fun DetailsScreen(t: Title, activity: MainActivity, onBack: () -> Unit, onOpen: 
         // ---- Player ----
         Box(Modifier.fillMaxWidth().then(if (fullscreen) Modifier.weight(1f) else Modifier.aspectRatio(16f / 9f)).background(Color.Black)) {
             AndroidView(factory = { PlayerView(it).apply { useController = false; resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT; player = exo } }, Modifier.fillMaxSize())
+            if (url == null) Text("This title isn't in your library yet.\nAdd it to catalog.json to play it.", Modifier.align(Alignment.Center).padding(24.dp),
+                color = Color.White.copy(alpha = 0.75f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Row(Modifier.align(Alignment.TopStart).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton({ if (fullscreen) fullscreen = false else onBack() }) { Icon(Icons.Filled.ArrowBack, "Back") }
                 Text(t.displayTitle, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -107,7 +127,7 @@ fun DetailsScreen(t: Title, activity: MainActivity, onBack: () -> Unit, onOpen: 
                     Text(fmt(dur), fontSize = 12.sp)
                 }
                 Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.SkipNext, "Next", Modifier.clickableNoRipple { exo.seekTo(0) })
+                    Icon(Icons.Filled.SkipNext, "Next", Modifier.clickableNoRipple { if (t.kind == "SERIES") nextEpisode() else exo.seekTo(0) })
                     Text("CC", Modifier.clip(RoundedCornerShape(6.dp)).background(if (cc) Accent else Color.White).padding(horizontal = 7.dp, vertical = 2.dp)
                         .clickableNoRipple { cc = !cc }, color = if (cc) Color.White else Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     Text("${if (speed % 1f == 0f) speed.toInt().toString() else speed.toString()}x", Modifier.clickableNoRipple {
@@ -145,7 +165,23 @@ fun DetailsScreen(t: Title, activity: MainActivity, onBack: () -> Unit, onOpen: 
                     Box(Modifier.size(44.dp).clip(CircleShape).background(Accent), Alignment.Center) { Icon(Icons.Filled.PlayArrow, null) }
                     Column(Modifier.padding(start = 14.dp)) {
                         Text("NOW PLAYING", fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f))
-                        Text(if (t.kind == "SERIES") "Latest episode" else "Full movie", fontWeight = FontWeight.SemiBold)
+                        Text(if (t.kind == "SERIES") "S$season · E$ep  ${episode?.title ?: ""}" else "Full movie", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+            if (t.kind == "SERIES" && cs != null) {
+                item {
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        cs.seasons.orEmpty().forEach { s ->
+                            FilterChip(s.season == season, { season = s.season; ep = s.episodes?.firstOrNull()?.ep ?: 0 }, { Text("Season ${s.season}") })
+                        }
+                    }
+                }
+                items(cs.seasons?.find { it.season == season }?.episodes.orEmpty()) { e ->
+                    val on = e.ep == ep
+                    Row(Modifier.fillMaxWidth().glass(RoundedCornerShape(22.dp), if (on) Accent else Color.White).clickable { ep = e.ep }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(40.dp).clip(CircleShape).background(if (on) Accent else Color.White.copy(alpha = 0.1f)), Alignment.Center) { Icon(Icons.Filled.PlayArrow, null) }
+                        Text("E${e.ep}  ${e.title ?: ""}", Modifier.padding(start = 12.dp), fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

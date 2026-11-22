@@ -34,6 +34,7 @@ private class Rail(val icon: ImageVector, val title: String, val items: List<Tit
 
 @Composable
 fun HomeScreen(onPlay: (Title) -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
     var reload by remember { mutableIntStateOf(0) }
     var hero by remember { mutableStateOf<List<Title>>(emptyList()) }
     var rails by remember { mutableStateOf<List<Rail>>(emptyList()) }
@@ -45,8 +46,9 @@ fun HomeScreen(onPlay: (Title) -> Unit) {
         if (k.isBlank()) { error = "Add your TMDB_API_KEY (see README) and rebuild."; return@LaunchedEffect }
         try {
             val t = api.trending().results.clean().filter { it.poster != null }
-            hero = t.take(8)
-            rails = listOf(
+            val lib = runCatching { Catalog.load(ctx) }.getOrDefault(emptyList())
+            hero = lib.ifEmpty { t }.take(8)
+            rails = (if (lib.isEmpty()) emptyList() else listOf(Rail(Icons.Filled.VideoLibrary, "My Library", lib))) + listOf(
                 Rail(Icons.Filled.BarChart, "Trending Now", t.take(20), ranked = true),
                 Rail(Icons.Filled.Whatshot, "Popular Movies", api.popular().results.clean()),
                 Rail(Icons.Filled.LiveTv, "Popular Series", api.popularTv().results.clean()),

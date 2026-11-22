@@ -33,6 +33,8 @@ interface Api {
     @GET("movie/popular") suspend fun popular(): Page
     @GET("tv/popular") suspend fun popularTv(): Page
     @GET("{type}/{id}/recommendations") suspend fun recs(@Path("type") type: String, @Path("id") id: Int): Page
+    @GET("movie/{id}") suspend fun movieDetail(@Path("id") id: Int): Detail
+    @GET("tv/{id}") suspend fun tvDetail(@Path("id") id: Int): Detail
     @GET("movie/top_rated") suspend fun topRated(): Page
 }
 
