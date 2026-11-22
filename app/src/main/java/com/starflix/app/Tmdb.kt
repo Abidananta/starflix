@@ -1,0 +1,39 @@
+package com.starflix.app
+
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.GET
+import retrofit2.http.Query
+
+data class Title(
+    val id: Int,
+    val title: String?, val name: String?,
+    val poster_path: String?,
+    val vote_average: Double?,
+    val release_date: String?, val first_air_date: String?,
+    val media_type: String?,
+    val genre_ids: List<Int>?,
+) {
+    val displayTitle get() = title ?: name ?: ""
+    val year get() = (release_date ?: first_air_date ?: "").take(4)
+    val poster get() = poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
+    val posterLarge get() = poster_path?.let { "https://image.tmdb.org/t/p/w780$it" }
+    val rating get() = "%.1f".format(vote_average ?: 0.0)
+    val kind get() = if (media_type == "tv" || first_air_date != null) "SERIES" else "MOVIE"
+    val genres get() = (genre_ids ?: emptyList()).mapNotNull { GENRES[it] }.take(3).joinToString("  •  ")
+}
+data class Page(val results: List<Title>)
+
+interface Api {
+    @GET("trending/all/week") suspend fun trending(@Query("api_key") k: String): Page
+    @GET("movie/popular") suspend fun popular(@Query("api_key") k: String): Page
+    @GET("tv/popular") suspend fun popularTv(@Query("api_key") k: String): Page
+    @GET("movie/top_rated") suspend fun topRated(@Query("api_key") k: String): Page
+}
+
+val api: Api = Retrofit.Builder().baseUrl("https://api.themoviedb.org/3/")
+    .addConverterFactory(GsonConverterFactory.create()).build().create(Api::class.java)
+
+val GENRES = mapOf(28 to "Action", 12 to "Adventure", 16 to "Animation", 35 to "Comedy", 80 to "Crime",
+    99 to "Documentary", 18 to "Drama", 10751 to "Family", 14 to "Fantasy", 27 to "Horror", 9648 to "Mystery",
+    10749 to "Romance", 878 to "Sci-Fi", 53 to "Thriller", 10759 to "Action", 10765 to "Sci-Fi", 10768 to "War")
