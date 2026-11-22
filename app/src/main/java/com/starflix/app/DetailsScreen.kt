@@ -3,9 +3,8 @@ package com.starflix.app
 import android.content.pm.ActivityInfo
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.clickable
@@ -96,6 +95,7 @@ fun DetailsScreen(t: Title, activity: MainActivity, onBack: () -> Unit, onOpen: 
         }
     }
     LaunchedEffect(exo) { while (true) { if (!dragging) pos = exo.currentPosition; dur = exo.duration.coerceAtLeast(0L); videoH = exo.videoSize.height; delay(400) } }
+    val ctrlAlpha by animateFloatAsState(if (controlsVisible || url == null) 1f else 0f, label = "controls")
     LaunchedEffect(controlsVisible, playing, touch) { if (controlsVisible && playing) { delay(3500); controlsVisible = false } }
     LaunchedEffect(url) {
         if (url != null) { exo.setMediaItem(MediaItem.fromUri(url)); exo.prepare(); exo.playWhenReady = true } else exo.stop()
@@ -119,8 +119,8 @@ fun DetailsScreen(t: Title, activity: MainActivity, onBack: () -> Unit, onOpen: 
             Box(Modifier.fillMaxSize().clickableNoRipple { controlsVisible = !controlsVisible; touch++ })
             if (url == null) Text("This title isn't in your library yet.\nAdd it to catalog.json to play it.", Modifier.align(Alignment.Center).padding(24.dp),
                 color = Color.White.copy(alpha = 0.75f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            AnimatedVisibility(controlsVisible || url == null, Modifier.fillMaxSize(), enter = fadeIn(), exit = fadeOut()) {
-                Box(Modifier.fillMaxSize()) {
+            if (ctrlAlpha > 0.01f) {
+                Box(Modifier.fillMaxSize().alpha(ctrlAlpha)) {
                     Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(90.dp).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent))))
                     Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(150.dp).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)))))
                     Row(Modifier.align(Alignment.TopStart).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
