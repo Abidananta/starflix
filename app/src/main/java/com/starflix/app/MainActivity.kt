@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
 // Replace with your own licensed stream / your backend's URL for a title.
-const val DEMO_STREAM = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+const val DEMO_STREAM = "https://cdn1.discoveryftp.net/Movies/Hindi/2026/Bhooth%20Bangla/Bhooth.Bangla.2026.1080p.NF.WEB-DL.Hindi-Dual.x264.mkv"
 @Volatile var pipEligible = false
 
 class MainActivity : ComponentActivity() {
