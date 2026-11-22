@@ -46,7 +46,8 @@ fun HomeScreen(onPlay: (Title) -> Unit) {
         if (k.isBlank()) { error = "Add your TMDB_API_KEY (see README) and rebuild."; return@LaunchedEffect }
         try {
             val t = api.trending().results.clean().filter { it.poster != null }
-            val lib = runCatching { Catalog.load(ctx) }.getOrDefault(emptyList())
+            val lib = Catalog.load(ctx)
+            error = Catalog.problem
             hero = lib.ifEmpty { t }.take(8)
             rails = (if (lib.isEmpty()) emptyList() else listOf(Rail(Icons.Filled.VideoLibrary, "My Library", lib))) + listOf(
                 Rail(Icons.Filled.BarChart, "Trending Now", t.take(20), ranked = true),

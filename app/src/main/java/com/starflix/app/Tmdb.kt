@@ -18,8 +18,8 @@ data class Title(
 ) {
     val displayTitle get() = title ?: name ?: ""
     val year get() = (release_date ?: first_air_date ?: "").take(4)
-    val poster get() = poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
-    val posterLarge get() = poster_path?.let { "https://image.tmdb.org/t/p/w780$it" }
+    val poster get() = poster_path?.let { if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w500$it" }
+    val posterLarge get() = poster_path?.let { if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w780$it" }
     val rating get() = "%.1f".format(vote_average ?: 0.0)
     val kind get() = if (media_type == "tv" || first_air_date != null) "SERIES" else "MOVIE"
     val genreList get() = (genre_ids ?: emptyList()).mapNotNull { GENRES[it] }.distinct().take(3)
