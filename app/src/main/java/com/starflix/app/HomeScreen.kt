@@ -47,13 +47,13 @@ fun HomeScreen(onPlay: (Title) -> Unit) {
         val k = BuildConfig.TMDB_API_KEY
         if (k.isBlank()) { error = "Add your TMDB_API_KEY (see README) and rebuild."; return@LaunchedEffect }
         try {
-            val t = api.trending(k).results.filter { it.poster != null }
+            val t = api.trending().results.filter { it.poster != null }
             hero = t.take(8)
             rails = listOf(
                 Rail(Icons.Filled.BarChart, "Trending Now", t.take(20), ranked = true),
-                Rail(Icons.Filled.Whatshot, "Popular Movies", api.popular(k).results),
-                Rail(Icons.Filled.LiveTv, "Popular Series", api.popularTv(k).results),
-                Rail(Icons.Filled.Star, "Top Rated", api.topRated(k).results),
+                Rail(Icons.Filled.Whatshot, "Popular Movies", api.popular().results),
+                Rail(Icons.Filled.LiveTv, "Popular Series", api.popularTv().results),
+                Rail(Icons.Filled.Star, "Top Rated", api.topRated().results),
             )
         } catch (e: Exception) { error = "Couldn't load titles. Check your connection and refresh." }
     }

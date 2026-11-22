@@ -1,9 +1,9 @@
 package com.starflix.app
 
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
-import retrofit2.http.Query
 
 data class Title(
     val id: Int,
@@ -25,13 +25,20 @@ data class Title(
 data class Page(val results: List<Title>)
 
 interface Api {
-    @GET("trending/all/week") suspend fun trending(@Query("api_key") k: String): Page
-    @GET("movie/popular") suspend fun popular(@Query("api_key") k: String): Page
-    @GET("tv/popular") suspend fun popularTv(@Query("api_key") k: String): Page
-    @GET("movie/top_rated") suspend fun topRated(@Query("api_key") k: String): Page
+    @GET("trending/all/week") suspend fun trending(): Page
+    @GET("movie/popular") suspend fun popular(): Page
+    @GET("tv/popular") suspend fun popularTv(): Page
+    @GET("movie/top_rated") suspend fun topRated(): Page
 }
 
-val api: Api = Retrofit.Builder().baseUrl("https://api.themoviedb.org/3/")
+// TMDB "API Read Access Token" (v4, starts with eyJ...) is sent as a Bearer header.
+private val client = OkHttpClient.Builder().addInterceptor { chain ->
+    chain.proceed(chain.request().newBuilder()
+        .addHeader("Authorization", "Bearer ${BuildConfig.TMDB_API_KEY}")
+        .addHeader("accept", "application/json").build())
+}.build()
+
+val api: Api = Retrofit.Builder().baseUrl("https://api.themoviedb.org/3/").client(client)
     .addConverterFactory(GsonConverterFactory.create()).build().create(Api::class.java)
 
 val GENRES = mapOf(28 to "Action", 12 to "Adventure", 16 to "Animation", 35 to "Comedy", 80 to "Crime",
