@@ -29,9 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
-private val Glass = Color.White.copy(alpha = 0.05f)
-private val GlassLine = Color.White.copy(alpha = 0.10f)
-private val Accent = Color(0xFF5B7CFF)
 
 private class Rail(val icon: ImageVector, val title: String, val items: List<Title>, val ranked: Boolean = false)
 
@@ -47,24 +44,25 @@ fun HomeScreen(onPlay: (Title) -> Unit) {
         val k = BuildConfig.TMDB_API_KEY
         if (k.isBlank()) { error = "Add your TMDB_API_KEY (see README) and rebuild."; return@LaunchedEffect }
         try {
-            val t = api.trending().results.filter { it.poster != null }
+            val t = api.trending().results.clean().filter { it.poster != null }
             hero = t.take(8)
             rails = listOf(
                 Rail(Icons.Filled.BarChart, "Trending Now", t.take(20), ranked = true),
-                Rail(Icons.Filled.Whatshot, "Popular Movies", api.popular().results),
-                Rail(Icons.Filled.LiveTv, "Popular Series", api.popularTv().results),
-                Rail(Icons.Filled.Star, "Top Rated", api.topRated().results),
+                Rail(Icons.Filled.Whatshot, "Popular Movies", api.popular().results.clean()),
+                Rail(Icons.Filled.LiveTv, "Popular Series", api.popularTv().results.clean()),
+                Rail(Icons.Filled.Star, "Top Rated", api.topRated().results.clean()),
             )
         } catch (e: Exception) { error = "Couldn't load titles. Check your connection and refresh." }
     }
 
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1B2040), Color(0xFF0B0D14))))) {
+    Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)) {
             item {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Star Flix", fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { reload++ }, modifier = Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.1f))) {
+                    Text("Star Flix", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f),
+                        style = androidx.compose.ui.text.TextStyle(brush = Brush.linearGradient(listOf(Color.White, Accent))))
+                    IconButton(onClick = { reload++ }, modifier = Modifier.glass(CircleShape)) {
                         Icon(Icons.Filled.Refresh, "Refresh")
                     }
                 }
@@ -73,7 +71,6 @@ fun HomeScreen(onPlay: (Title) -> Unit) {
             if (hero.isNotEmpty()) item { Hero(hero, onPlay) }
             itemsIndexed(rails) { _, r -> RailSection(r, onPlay) }
         }
-        BottomNav(Modifier.align(Alignment.BottomCenter))
     }
 }
 
@@ -84,7 +81,7 @@ private fun Hero(items: List<Title>, onPlay: (Title) -> Unit) {
         HorizontalPager(pager, contentPadding = PaddingValues(horizontal = 28.dp), pageSpacing = 12.dp,
             modifier = Modifier.fillMaxWidth().height(460.dp)) { i ->
             val t = items[i]
-            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(32.dp))) {
+            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(32.dp)).border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))), RoundedCornerShape(32.dp))) {
                 AsyncImage(t.posterLarge, t.displayTitle, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.92f)), startY = 500f)))
                 Column(Modifier.align(Alignment.BottomCenter).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -110,20 +107,19 @@ private fun Hero(items: List<Title>, onPlay: (Title) -> Unit) {
 
 @Composable
 private fun RailSection(r: Rail, onPlay: (Title) -> Unit) {
-    Column(Modifier.padding(horizontal = 12.dp).clip(RoundedCornerShape(28.dp)).background(Glass)
-        .border(BorderStroke(1.dp, GlassLine), RoundedCornerShape(28.dp)).padding(vertical = 14.dp)) {
+    Column(Modifier.padding(horizontal = 12.dp).glass(RoundedCornerShape(30.dp)).padding(vertical = 14.dp)) {
         Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(r.icon, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = 0.7f))
             Spacer(Modifier.width(8.dp))
             Text(r.title, fontWeight = FontWeight.Bold, fontSize = 17.sp)
             Spacer(Modifier.width(10.dp))
-            Text("${r.items.size}", fontSize = 12.sp, modifier = Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.1f)).padding(horizontal = 9.dp, vertical = 3.dp))
+            Text("${r.items.size}", fontSize = 12.sp, modifier = Modifier.glass(CircleShape).padding(horizontal = 9.dp, vertical = 3.dp))
         }
         LazyRow(contentPadding = PaddingValues(16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             itemsIndexed(r.items.filter { it.poster != null }) { i, t ->
                 Column(Modifier.width(146.dp).clip(RoundedCornerShape(20.dp)).clickableNoRipple { onPlay(t) }) {
                     Box {
-                        AsyncImage(t.poster, t.displayTitle, Modifier.fillMaxWidth().aspectRatio(2f / 3f).clip(RoundedCornerShape(22.dp)), contentScale = ContentScale.Crop)
+                        AsyncImage(t.poster, t.displayTitle, Modifier.fillMaxWidth().aspectRatio(2f / 3f).clip(RoundedCornerShape(22.dp)).border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(22.dp)), contentScale = ContentScale.Crop)
                         if (r.ranked && i < 10) Text("${i + 1}", fontSize = 12.sp, fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(8.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 9.dp, vertical = 4.dp))
                     }
@@ -138,24 +134,4 @@ private fun RailSection(r: Rail, onPlay: (Title) -> Unit) {
     }
 }
 
-@Composable
-private fun BottomNav(modifier: Modifier) {
-    var sel by remember { mutableIntStateOf(0) }
-    val tabs = listOf(Icons.Filled.Movie to "Home", Icons.Filled.Search to "Search", Icons.Filled.VideoLibrary to "Library", Icons.Filled.Settings to "Settings")
-    Row(modifier.navigationBarsPadding().padding(bottom = 12.dp).clip(RoundedCornerShape(36.dp))
-        .background(Color(0xFF1C2033).copy(alpha = 0.88f)).border(BorderStroke(1.dp, GlassLine), RoundedCornerShape(36.dp)).padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-        tabs.forEachIndexed { i, (icon, label) ->
-            val on = sel == i
-            Row(Modifier.clip(CircleShape).background(if (on) Accent.copy(alpha = 0.22f) else Color.Transparent)
-                .clickableNoRipple { sel = i }.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, label, tint = if (on) Accent else Color.White.copy(alpha = 0.8f))
-                if (on) { Spacer(Modifier.width(8.dp)); Text(label, color = Accent, fontWeight = FontWeight.SemiBold) }
-            }
-        }
-    }
-}
 
-@Composable
-private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onClick))

@@ -4,6 +4,7 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Path
 
 data class Title(
     val id: Int,
@@ -13,6 +14,7 @@ data class Title(
     val release_date: String?, val first_air_date: String?,
     val media_type: String?,
     val genre_ids: List<Int>?,
+    val overview: String?, val adult: Boolean?,
 ) {
     val displayTitle get() = title ?: name ?: ""
     val year get() = (release_date ?: first_air_date ?: "").take(4)
@@ -20,6 +22,8 @@ data class Title(
     val posterLarge get() = poster_path?.let { "https://image.tmdb.org/t/p/w780$it" }
     val rating get() = "%.1f".format(vote_average ?: 0.0)
     val kind get() = if (media_type == "tv" || first_air_date != null) "SERIES" else "MOVIE"
+    val genreList get() = (genre_ids ?: emptyList()).mapNotNull { GENRES[it] }.distinct().take(3)
+    val recType get() = if (kind == "SERIES") "tv" else "movie"
     val genres get() = (genre_ids ?: emptyList()).mapNotNull { GENRES[it] }.take(3).joinToString("  •  ")
 }
 data class Page(val results: List<Title>)
@@ -28,6 +32,7 @@ interface Api {
     @GET("trending/all/week") suspend fun trending(): Page
     @GET("movie/popular") suspend fun popular(): Page
     @GET("tv/popular") suspend fun popularTv(): Page
+    @GET("{type}/{id}/recommendations") suspend fun recs(@Path("type") type: String, @Path("id") id: Int): Page
     @GET("movie/top_rated") suspend fun topRated(): Page
 }
 
