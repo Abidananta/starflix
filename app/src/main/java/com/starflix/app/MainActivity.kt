@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.*
@@ -53,7 +54,8 @@ fun App(activity: MainActivity) {
             var tab by remember { mutableIntStateOf(0) }
             var selected by remember { mutableStateOf<Title?>(null) }
             BackHandler(selected != null) { selected = null }
-            Box(Modifier.fillMaxSize().aurora()) {
+            Surface(Modifier.fillMaxSize().aurora(), color = Color.Transparent, contentColor = Color.White) {
+            Box(Modifier.fillMaxSize()) {
                 when (tab) {
                     0 -> HomeScreen { selected = it }
                     1 -> Box(Modifier.fillMaxSize(), Alignment.Center) { Text("Search is coming soon", color = Color.White.copy(alpha = 0.6f)) }
@@ -62,6 +64,7 @@ fun App(activity: MainActivity) {
                 }
                 BottomNav(tab, { tab = it }, Modifier.align(Alignment.BottomCenter))
                 selected?.let { t -> key(t.id) { DetailsScreen(t, activity, { selected = null }, { selected = it }) } }
+            }
             }
         }
     }
